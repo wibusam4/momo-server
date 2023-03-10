@@ -67,7 +67,8 @@ const UserController = {
           const token = jwt.sign(
             {
               id: currentUser.id,
-              phone: currentUser.phone,
+              username: currentUser.username,
+              role: currentUser.role,
             },
             config.JWT_SECRET,
             {
