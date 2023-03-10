@@ -1,0 +1,20 @@
+###Register
+POST http://localhost:5000/api/user/register
+Content-Type: application/json
+
+{
+    "name": "admin ne",
+    "username":"admin",
+    "password":"111qqqqq"
+}
+
+###Login
+POST http://localhost:5000/api/user/login
+Content-Type: application/json
+
+{
+    "username":"admin",
+    "password":"111qqqqq"
+}
+
+#Bear Token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0MGFkNGEyZDQwZDAwNGFjMzIxZmI3ZCIsInVzZXJuYW1lIjoid2lidXNhbWEiLCJyb2xlIjoxLCJpYXQiOjE2Nzg0MzEzOTQsImV4cCI6MTY3ODQzODU5NH0.b7FmgFQOyauT4KJaKMZi2eMnSAooLJgdbw_9v82xvnw

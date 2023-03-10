@@ -1,14 +1,18 @@
-import express from 'express';
-import dotenv from 'dotenv'
-
-dotenv.config()
+import express from "express";
+import cors from "cors";
+import config from "./config";
+import db from "./db";
+import routes from "./routes";
 const app = express();
-const port = process.env.PORT;
+db.connect();
 
-app.get('/', (req, res) => {
-  res.send('from wibusama without love 🖕');
+app.use(cors());
+app.use(express.json());
+routes.use(app);
+app.get("/", (req, res) => {
+  res.send("from wibusama without love 🖕");
 });
 
-app.listen(port, () => {
-  return console.log(`Express is listening at http://localhost:${port}`);
+app.listen(config.PORT, () => {
+  return console.log(`Server is running at http://localhost:${config.PORT}`);
 });
