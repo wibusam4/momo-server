@@ -3,6 +3,7 @@ import { showInternal, showMissing, showSuccess } from "../untils";
 import bcrypt from "bcrypt";
 import config from "../config";
 import User from "../model/User.model";
+import momo from "../untils/momo";
 const saltRounds = 10;
 const UserController = {
   register: async (req, res) => {
@@ -75,13 +76,23 @@ const UserController = {
               expiresIn: "2h",
             }
           );
-          return showSuccess(res, token);
+          return showSuccess(res, { user: currentUser, token });
         }
       }
       return showMissing(res, "Tài khoản hoặc mật khẩu không chính xác");
     } catch (error) {
       return showInternal(res, error);
     }
+  },
+  momo: async (req, res) => {
+    const {phone, password} = req.body
+    const data = {
+      phone,
+      imei: momo.getIMEI(),
+      secure_id: momo.getSercureID()
+    }
+    const value = await momo.getOTP(data)
+    return showSuccess(res, value);
   },
 };
 
