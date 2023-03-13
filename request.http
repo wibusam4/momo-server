@@ -18,3 +18,12 @@ Content-Type: application/json
 }
 
 #Bear Token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0MGFkNGEyZDQwZDAwNGFjMzIxZmI3ZCIsInVzZXJuYW1lIjoid2lidXNhbWEiLCJyb2xlIjoxLCJpYXQiOjE2Nzg0MzEzOTQsImV4cCI6MTY3ODQzODU5NH0.b7FmgFQOyauT4KJaKMZi2eMnSAooLJgdbw_9v82xvnw
+
+###Test
+POST http://localhost:5000/api/user/momo
+Content-Type:  application/json
+
+{
+    "phone": "0367258861",
+    "password": ""
+}

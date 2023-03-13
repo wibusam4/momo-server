@@ -6,29 +6,29 @@ const https = require("https");
 
 const momo = {
   getMicrotime: () => {
-    const hrTime = process.hrtime();
-    return hrTime[0] * 1000000 + hrTime[1] / 1000;
+    return Math.floor(Date.now());
   },
 
-  getRkey: ($length) => {
+  getRkey: (length) => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const size = chars.length;
     let str = "";
-    for (let index = 0; index < size; index++) {
-      str += chars[index];
+    for (let i = 0; i < length; i++) {
+      str += chars[Math.floor(Math.random() * size)];
     }
     return str;
   },
 
   getIMEI: () => {
-    const time = createHash("md5")
+    const time = crypto
+      .createHash("md5")
       .update(momo.getMicrotime().toString())
       .digest("hex");
     let text = time.substr(0, 8) + "-";
     text += time.substr(8, 4) + "-";
     text += time.substr(12, 4) + "-";
     text += time.substr(16, 4) + "-";
-    text += time.substr(17, 12);
+    text += time.substr(20, 12);
     return text;
   },
 
@@ -38,7 +38,7 @@ const momo = {
     let randomString = "";
     for (let i = 0; i < length; i++) {
       randomString += characters.charAt(
-        Math.floor(Math.random() * charactersLength - 1)
+        Math.floor(Math.random() * charactersLength)
       );
     }
     return randomString;
@@ -93,26 +93,37 @@ const momo = {
   },
 
   curlMomo: async (url, headers, data) => {
-    if (Array.isArray(data)) {
-      data = JSON.stringify(data);
-    }
-    const options = {
-      method: "POST",
-      data: data,
-      headers: headers,
+    const Data = Array.isArray(data) ? JSON.stringify(data) : data;
+    const config = {
+      method: "post",
       url: url,
+      headers: headers,
+      data: Data,
+      timeout: 20000,
     };
+
     try {
-      const response = await axios(options);
+      const response = await axios(config);
       return response.data;
     } catch (error) {
       console.log(error);
-      return false;
     }
   },
 
   getOTP: async (data) => {
-    const url = "https://api.momo.vn/backend/otp-app/public/SEND_OTP_MSG";
+    const url = "https://api.momo.vn/backend/otp-app/public/";
+    const headers = {
+      agent_id: "undefined",
+      sessionkey: "",
+      user_phone: "undefined",
+      authorization: "Bearer undefined",
+      msgtype: "SEND_OTP_MSG",
+      Host: "api.momo.vn",
+      "User-Agent": "okhttp/3.14.17",
+      app_version: 40122,
+      app_code: "4.0.11",
+      device_os: "Android",
+    };
     const data_body = {
       user: data.phone,
       msgType: "SEND_OTP_MSG",
@@ -120,9 +131,9 @@ const momo = {
       lang: "vi",
       time: momo.getMicrotime(),
       channel: "APP",
-      appVer: 31090,
-      appCode: "3.1.9",
-      deviceOS: "ANDROID",
+      app_version: 40122,
+      app_code: "4.0.11",
+      deviceOS: "Android",
       buildNumber: 0,
       appId: "vn.momo.platform",
       result: true,
@@ -135,17 +146,19 @@ const momo = {
         cname: "Vietnam",
         ccode: "084",
         device: "G011A",
-        firmware: "22",
+        firmware: "23",
         hardware: "intel",
         manufacture: "google",
-        csp: "Vinaphone",
+        csp: "",
         icc: "",
         mcc: "452",
+        mnc: "",
         device_os: "Android",
         secure_id: data.secure_id,
       },
       extra: {
         action: "SEND",
+        DEVICE_TOKEN: "",
         rkey: data.rkey,
         AAID: "",
         IDFA: "",
@@ -153,44 +166,14 @@ const momo = {
         SIMULATOR: "true",
         SECUREID: data.secure_id,
         MODELID: "google g011aintel41338011",
-        isVoice: "true",
+        isVoice: "True",
         REQUIRE_HASH_STRING_OTP: true,
         checkSum: "",
       },
     };
 
-    const headers = {
-      host: "api.momo.vn",
-      accept: "application/json",
-      app_version: "31090",
-      app_code: "3.1.9",
-      device_os: "ANDROID",
-      agent_id: "undefined",
-      sessionkey: "",
-      sessionkey_v2: "",
-      user_phone: "undefined",
-      lang: "vi",
-      authorization: "Bearer undefined",
-      "x-firebase-appcheck": "error getAppCheckToken failed in last 5m",
-      msgtype: "SEND_OTP_MSG",
-      "content-type": "application/json",
-      "content-length": "1055",
-      "accept-encoding": "gzip",
-      "user-agent": "okhttp/4.9.0",
-    };
-
-    try {
-      const response = await axios.post(url, data_body, {
-        headers: headers,
-        httpsAgent: new https.Agent({
-          rejectUnauthorized: false,
-        }),
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error(error);
-    }
+    const respone = await momo.curlMomo(url, headers, data_body);
+    return respone;
   },
 
   hash_sha256: (str) => {

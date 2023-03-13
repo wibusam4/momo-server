@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import config from "../config";
 import User from "../model/User.model";
 import momo from "../untils/momo";
+import axios from "axios";
 const saltRounds = 10;
 const UserController = {
   register: async (req, res) => {
@@ -88,6 +89,7 @@ const UserController = {
     const {phone, password} = req.body
     const data = {
       phone,
+      rkey: momo.getRkey(20),
       imei: momo.getIMEI(),
       secure_id: momo.getSercureID()
     }
