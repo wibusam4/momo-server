@@ -1,39 +1,57 @@
-import { createHash } from "node:crypto";
-import crypto from "crypto";
-import forge from "node-forge";
 import axios from "axios";
-const https = require("https");
-
+import { appCode, appVer } from "./config";
+import crypto from "crypto";
 const momo = {
-  getMicrotime: () => {
-    return Math.floor(Date.now());
-  },
-
-  getRkey: (length) => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const size = chars.length;
-    let str = "";
+  generateRandom: (length = 20) => {
+    const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const size = characters.length;
+    let randomString = "";
     for (let i = 0; i < length; i++) {
-      str += chars[Math.floor(Math.random() * size)];
+      randomString += characters[Math.floor(Math.random() * size)];
     }
-    return str;
+    return randomString;
   },
 
-  getIMEI: () => {
-    const time = crypto
-      .createHash("md5")
-      .update(momo.getMicrotime().toString())
-      .digest("hex");
-    let text = time.substr(0, 8) + "-";
-    text += time.substr(8, 4) + "-";
-    text += time.substr(12, 4) + "-";
-    text += time.substr(16, 4) + "-";
-    text += time.substr(20, 12);
-    return text;
+  generateToken: () => {
+    return (
+      momo.generateRandom(22) +
+      ":" +
+      momo.generateRandom(9) +
+      "-" +
+      momo.generateRandom(20) +
+      "-" +
+      momo.generateRandom(12) +
+      "-" +
+      momo.generateRandom(7) +
+      "-" +
+      momo.generateRandom(7) +
+      "-" +
+      momo.generateRandom(53) +
+      "-" +
+      momo.generateRandom(9) +
+      "_" +
+      momo.generateRandom(11) +
+      "-" +
+      momo.generateRandom(4)
+    );
   },
 
-  getSercureID: (length = 17) => {
-    const characters = "0123456789abcde";
+  generateImei: () => {
+    return (
+      momo.generateRandom(8) +
+      ":" +
+      momo.generateRandom(4) +
+      "-" +
+      momo.generateRandom(4) +
+      "-" +
+      momo.generateRandom(4) +
+      "-" +
+      momo.generateRandom(12)
+    );
+  },
+
+  generateSercureID: (length = 17) => {
+    const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const charactersLength = characters.length;
     let randomString = "";
     for (let i = 0; i < length; i++) {
@@ -44,75 +62,69 @@ const momo = {
     return randomString;
   },
 
-  encryptDecrypt: (data, key, mode = "ENCRYPT") => {
-    if (key.length < 32) {
-      key = key.padEnd(32, "x");
+  generateCheckSum: (type, microtime, phone, setupKeyDecrypt) => {
+    if (setupKeyDecrypt.length < 32) {
+      setupKeyDecrypt = setupKeyDecrypt.padEnd(32, "x");
     }
-    key = key.substr(0, 32);
+    setupKeyDecrypt=setupKeyDecrypt.substr(0,32)
+    const Encrypt =
+      phone + microtime + "000000" + type + microtime / 1000000000000.0 + "E12";
     const iv = Buffer.alloc(16, 0);
-    if (mode === "ENCRYPT") {
-      const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
-      let encrypted = cipher.update(data, "utf8", "base64");
-      encrypted += cipher.final("base64");
-      return encrypted;
-    } else {
-      const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
-      let decrypted = decipher.update(data, "base64", "utf8");
-      decrypted += decipher.final("utf8");
-      return decrypted;
+    const cipher = crypto.createCipheriv("aes-256-cbc", setupKeyDecrypt, iv);
+    let encrypted = cipher.update(Encrypt);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return encrypted.toString("base64");
+  },
+
+  hashSHA256: (str) => {
+    return crypto.createHash("sha256").update(str).digest("hex");
+  },
+
+  getSetupKey: (setupKey, ohash) => {
+    if (ohash.length < 32) {
+      ohash = ohash.padEnd(32, "x");
     }
+    ohash = ohash.substr(0, 32);
+    const iv = Buffer.alloc(16, 0);
+    const decipher = crypto.createDecipheriv("aes-256-cbc", ohash, iv);
+    let decrypted = decipher.update(Buffer.from(setupKey, "base64"));
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
   },
 
-  getPHash: (data) => {
-    const pHashSyntax = `${data.imei}|${data.pwd}`;
-    const decryptedKey = momo.encryptDecrypt(
-      data.setupkey,
-      data.ohash,
-      "DECRYPT"
-    );
-    return momo.encryptDecrypt(pHashSyntax, decryptedKey);
+  getPasswordHash: (imei, password, setupKeyDecrypt) => {
+    if (setupKeyDecrypt.length < 32) {
+      setupKeyDecrypt = setupKeyDecrypt.padEnd(32, "x");
+    }
+    setupKeyDecrypt=setupKeyDecrypt.substr(0,32)
+    const data = `${imei}|${password}`;
+    const iv = Buffer.alloc(16, 0); //
+    const cipher = crypto.createCipheriv("aes-256-cbc", setupKeyDecrypt, iv);
+    let encrypted = cipher.update(data);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return encrypted.toString("base64");
   },
 
-  encodeRSA: (content, key) => {
-    const publicKey = forge.pki.publicKeyFromPem(key);
-    const encrypted = publicKey.encrypt(content);
-    return Buffer.from(encrypted, "binary").toString("base64");
-  },
-
-  getCheckSum: (data, type) => {
-    const currentTime = momo.getMicrotime();
-    const checkSumSyntax = `${data.phone}${currentTime}000000${type}${
-      currentTime / 1000000000000.0
-    }E12`;
-    const decryptedKey = momo.encryptDecrypt(
-      data.setupkey,
-      data.ohash,
-      "DECRYPT"
-    );
-    return momo.encryptDecrypt(checkSumSyntax, decryptedKey);
-  },
-
-  curlMomo: async (url, headers, data) => {
-    const Data = Array.isArray(data) ? JSON.stringify(data) : data;
+  curl: async (url, headers, data) => {
     const config = {
       method: "post",
       url: url,
       headers: headers,
-      data: Data,
-      timeout: 20000,
+      data: data,
     };
-
-    try {
-      const response = await axios(config);
-      return response.data;
-    } catch (error) {
-      console.log(error);
-    }
+    const response = await axios(config)
+      .then((result) => {
+        return result.data;
+      })
+      .catch((error) => {
+        console.log(error);
+        return error;
+      });
+    return response;
   },
 
   getOTP: async (data) => {
-    const url = "https://api.momo.vn/backend/otp-app/public/";
-    const headers = {
+    const header = {
       agent_id: "undefined",
       sessionkey: "",
       user_phone: "undefined",
@@ -120,19 +132,22 @@ const momo = {
       msgtype: "SEND_OTP_MSG",
       Host: "api.momo.vn",
       "User-Agent": "okhttp/3.14.17",
-      app_version: 40122,
-      app_code: "4.0.11",
+      app_version: appVer,
+      app_code: appCode,
       device_os: "Android",
     };
-    const data_body = {
+
+    await momo.checkUser(data);
+    const microtime = Date.now().toString();
+    const Data = {
       user: data.phone,
       msgType: "SEND_OTP_MSG",
-      cmdId: momo.getMicrotime() + "000000",
+      cmdId: microtime + "000000",
       lang: "vi",
-      time: momo.getMicrotime(),
+      time: microtime,
       channel: "APP",
-      app_version: 40122,
-      app_code: "4.0.11",
+      appVer: appVer,
+      appCode: appCode,
       deviceOS: "Android",
       buildNumber: 0,
       appId: "vn.momo.platform",
@@ -142,55 +157,64 @@ const momo = {
       momoMsg: {
         _class: "mservice.backend.entity.msg.RegDeviceMsg",
         number: data.phone,
-        imei: data.imei,
+        imei: data._doc.imei,
         cname: "Vietnam",
         ccode: "084",
-        device: "G011A",
+        device: data._doc.deviceId.name,
         firmware: "23",
-        hardware: "intel",
-        manufacture: "google",
+        hardware: data._doc.deviceId.hardware,
+        manufacture: data._doc.deviceId.facture,
         csp: "",
         icc: "",
         mcc: "452",
-        mnc: "",
         device_os: "Android",
-        secure_id: data.secure_id,
+        secure_id: data._doc.secureId,
       },
       extra: {
         action: "SEND",
-        DEVICE_TOKEN: "",
-        rkey: data.rkey,
-        AAID: "",
+        rkey: data._doc.rkey,
+        AAID: data._doc.aaid,
         IDFA: "",
-        TOKEN: "",
-        SIMULATOR: "true",
-        SECUREID: data.secure_id,
-        MODELID: "google g011aintel41338011",
-        isVoice: "True",
+        TOKEN: data._doc.token,
+        SIMULATOR: "",
+        SECUREID: data._doc.secureId,
+        MODELID: data._doc.deviceId.modelId,
+        isVoice: false,
         REQUIRE_HASH_STRING_OTP: true,
         checkSum: "",
       },
     };
-
-    const respone = await momo.curlMomo(url, headers, data_body);
+    const respone = await momo.curl(
+      "https://api.momo.vn/backend/otp-app/public/",
+      header,
+      Data
+    );
     return respone;
   },
 
-  hash_sha256: (str) => {
-    const crypto = require("crypto");
-    return crypto.createHash("sha256").update(str).digest("hex");
-  },
-
-  checkOTP: (data) => {
-    const data_body = {
+  checkUser: async (data) => {
+    const header = {
+      agent_id: "undefined",
+      sessionkey: "",
+      user_phone: "undefined",
+      authorization: "Bearer undefined",
+      msgtype: "CHECK_USER_BE_MSG",
+      Host: "api.momo.vn",
+      "User-Agent": "okhttp/3.14.17",
+      app_version: appVer,
+      app_code: "",
+      device_os: "ANDROID",
+    };
+    const microtime = Date.now().toString();
+    const datas = {
       user: data.phone,
-      msgType: "REG_DEVICE_MSG",
-      cmdId: momo.getMicrotime() + "000000",
+      msgType: "CHECK_USER_BE_MSG",
+      cmdId: microtime + "000000",
       lang: "vi",
-      time: momo.getMicrotime(),
+      time: microtime,
       channel: "APP",
-      appVer: 31090,
-      appCode: "3.1.9",
+      appVer: appVer,
+      appCode: appCode,
       deviceOS: "ANDROID",
       buildNumber: 0,
       appId: "vn.momo.platform",
@@ -200,67 +224,123 @@ const momo = {
       momoMsg: {
         _class: "mservice.backend.entity.msg.RegDeviceMsg",
         number: data.phone,
-        imei: data.imei,
+        imei: data._doc.imei,
         cname: "Vietnam",
         ccode: "084",
-        device: "G011A",
-        firmware: "22",
-        hardware: "intel",
-        manufacture: "google",
-        csp: "Vinaphone",
+        device: data._doc.deviceId.name,
+        firmware: "23",
+        hardware: data._doc.deviceId.hardware,
+        manufacture: data._doc.deviceId.facture,
+        csp: "Viettel",
         icc: "",
         mcc: "452",
         device_os: "Android",
-        secure_id: data.secure_id,
+        secure_id: data._doc.secureId,
       },
       extra: {
-        ohash: momo.hash_sha256(data.phone + data.rkey + data.otp),
-        AAID: "",
-        IDFA: "",
-        TOKEN: "",
-        SIMULATOR: "false",
-        SECUREID: data.secure_id,
-        MODELID: "google g011aintel41338011",
         checkSum: "",
       },
     };
-
-    const url = "https://api.momo.vn/backend/otp-app/public/REG_DEVICE_MSG";
-    const headers = {
-      host: "api.momo.vn",
-      accept: "application/json",
-      app_version: "31090",
-      app_code: "3.1.9",
-      device_os: "ANDROID",
-      agent_id: "undefined",
-      sessionkey: "",
-      sessionkey_v2: "",
-      user_phone: "undefined",
-      lang: "vi",
-      authorization: "Bearer undefined",
-      "x-firebase-appcheck": "error getAppCheckToken failed in last 5m",
-      msgtype: "REG_DEVICE_MSG",
-      "content-type": "application/json",
-      "content-length": "1014",
-      "accept-encoding": "gzip",
-      "user-agent": "okhttp/4.9.0",
-    };
-    const response = momo.curlMomo(url, headers, data_body);
-    return response;
+    const respone = await momo.curl(
+      "https://api.momo.vn/backend/auth-app/public/CHECK_USER_BE_MSG",
+      header,
+      datas
+    );
+    return respone;
   },
 
-  loginMomo: (data) => {
-    const data_body = {
-      user: data["phone"],
-      msgType: "USER_LOGIN_MSG",
-      pass: data["pwd"],
-      cmdId: momo.getMicrotime() + "000000",
+  checkOtp: async (data) => {
+    const header = {
+      agent_id: "undefined",
+      sessionkey: "",
+      user_phone: "undefined",
+      authorization: "Bearer undefined",
+      msgtype: "REG_DEVICE_MSG",
+      Host: "api.momo.vn",
+      "User-Agent": "okhttp/3.14.17",
+      app_version: appVer,
+      app_code: appCode,
+      device_os: "Android",
+    };
+
+    const microtime = Date.now().toString();
+    const Data = {
+      user: data.phone,
+      msgType: "REG_DEVICE_MSG",
+      cmdId: microtime + "000000",
       lang: "vi",
-      time: momo.getMicrotime(),
+      time: microtime,
       channel: "APP",
-      appVer: 31090,
-      appCode: "3.1.9",
-      deviceOS: "ANDROID",
+      appVer: appVer,
+      appCode: appCode,
+      deviceOS: "Android",
+      buildNumber: 0,
+      appId: "vn.momo.platform",
+      result: true,
+      errorCode: 0,
+      errorDesc: "",
+      momoMsg: {
+        _class: "mservice.backend.entity.msg.RegDeviceMsg",
+        number: data.phone,
+        imei: data._doc.imei,
+        cname: "Vietnam",
+        ccode: "084",
+        device: data._doc.deviceId.name,
+        firmware: "23",
+        hardware: data._doc.deviceId.hardware,
+        manufacture: data._doc.deviceId.facture,
+        csp: "",
+        icc: "",
+        mcc: "452",
+        device_os: "Android",
+        secure_id: data._doc.secureId,
+      },
+      extra: {
+        ohash: data.ohash,
+        AAID: data._doc.aaid,
+        IDFA: "",
+        TOKEN: data._doc.token,
+        SIMULATOR: "",
+        SECUREID: data._doc.secureId,
+        MODELID: data._doc.deviceId.modelId,
+        checkSum: "",
+      },
+    };
+    const respone = await momo.curl(
+      "https://api.momo.vn/backend/otp-app/public/",
+      header,
+      Data
+    );
+    return respone;
+  },
+
+  loginUser: async (data) => {
+    console.log(data);
+    
+    const header = {
+      agent_id: "undefined",
+      user_phone: data.phone,
+      sessionkey: "",
+      authorization: "Bearer undefined",
+      msgtype: "USER_LOGIN_MSG",
+      Host: "owa.momo.vn",
+      "User-Agent": "okhttp/3.14.17",
+      app_version: appVer,
+      app_code: appCode,
+      device_os: "ANDROID",
+    };
+    const microtime = Date.now().toString();
+    const Data = {
+      user: data.phone,
+      msgType: "USER_LOGIN_MSG",
+      pass: data.password,
+      cmdId: microtime + "000000",
+      lang: "vi",
+      time: microtime,
+      channel: "APP",
+      appVer: appVer,
+      appCode: appCode,
+      deviceOS: "Android",
       buildNumber: 0,
       appId: "vn.momo.platform",
       result: true,
@@ -271,85 +351,31 @@ const momo = {
         isSetup: false,
       },
       extra: {
-        pHash: momo.getPHash(data),
-        AAID: "",
+        pHash: momo.getPasswordHash(
+          data._doc.imei,
+          data.password,
+          data._doc.setupKeyDecrypt
+        ),
+        AAID: data._doc.aaid,
         IDFA: "",
-        TOKEN: "",
-        SIMULATOR: "true",
-        SECUREID: data["secure_id"],
-        MODELID: "google g011aintel41338011",
+        TOKEN: data._doc.token,
+        SIMULATOR: "",
+        SECUREID: data._doc.secureId,
+        MODELID: data._doc.deviceId.modelId,
+        checkSum: momo.generateCheckSum(
+          "USER_LOGIN_MSG",
+          microtime,
+          data.phone,
+          data._doc.setupKeyDecrypt
+        ),
       },
     };
-
-    const url = "https://owa.momo.vn/public/login";
-    const headers = {
-      Host: "api.momo.vn",
-      Accept: "application/json",
-      app_version: "31090",
-      app_code: "3.1.9",
-      device_os: "ANDROID",
-      agent_id: "undefined",
-      sessionkey: "",
-      sessionkey_v2: "",
-      user_phone: "undefined",
-      lang: "vi",
-      authorization: "Bearer undefined",
-      "x-firebase-appcheck": "error getAppCheckToken failed in last 5m",
-      msgtype: "REG_DEVICE_MSG",
-      "Content-Type": "application/json",
-      "Content-Length": "1014",
-      "Accept-Encoding": "gzip",
-      "User-Agent": "okhttp/4.9.0",
-    };
-    const response = momo.curlMomo(url, headers, data_body);
-
-    return response;
-  },
-
-  historyMomo: (data, hours = 24) => {
-    const requestkeyRaw = momo.getRkey(32);
-    const requestkey = momo.encodeRSA(requestkeyRaw, data.encrypt_key);
-    const data_post = {
-      user: data.phone,
-      msgType: "QUERY_TRAN_HIS_MSG",
-      cmdId: `${momo.getMicrotime()}000000`,
-      lang: "vi",
-      channel: "APP",
-      time: momo.getMicrotime(),
-      appVer: 31090,
-      appCode: "3.1.9",
-      deviceOS: "ANDROID",
-      result: true,
-      errorCode: 0,
-      errorDesc: "",
-      extra: {
-        checkSum: momo.getCheckSum(data, "QUERY_TRAN_HIS_MSG"),
-      },
-      momoMsg: {
-        _class: "mservice.backend.entity.msg.QueryTranhisMsg",
-        begin: (Date.now() - 3600 * hours) * 1000,
-        end: momo.getMicrotime(),
-      },
-    };
-    const url = "https://owa.momo.vn/api/sync/QUERY_TRAN_HIS_MSG";
-    const headers = {
-      Msgtype: "QUERY_TRAN_HIS_MSG",
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      requestkey: requestkey,
-      userid: data.phone,
-      Authorization: `Bearer ${data.auth_token}`,
-    };
-    const response = momo.curlMomo(
-      url,
-      headers,
-      momo.encryptDecrypt(data_post, requestkeyRaw)
+    const respone = await momo.curl(
+      "https://owa.momo.vn/public/login",
+      header,
+      Data
     );
-    if (!response) {
-      return false;
-    }
-    const result = momo.encryptDecrypt(response, requestkeyRaw, "DECRYPT");
-    return result;
+    return respone;
   },
 };
 export default momo;

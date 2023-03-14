@@ -4,9 +4,9 @@ import bcrypt from "bcrypt";
 import config from "../config";
 import User from "../model/User.model";
 import momo from "../untils/momo";
-import axios from "axios";
 const saltRounds = 10;
 const UserController = {
+
   register: async (req, res) => {
     try {
       const { username, password, name } = req.body;
@@ -49,6 +49,7 @@ const UserController = {
       return showInternal(res, error);
     }
   },
+  
   login: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -85,13 +86,11 @@ const UserController = {
       return showInternal(res, error);
     }
   },
-  momo: async (req, res) => {
+  
+  addMomo: async (req, res) => {
     const {phone, password} = req.body
     const data = {
       phone,
-      rkey: momo.getRkey(20),
-      imei: momo.getIMEI(),
-      secure_id: momo.getSercureID()
     }
     const value = await momo.getOTP(data)
     return showSuccess(res, value);

@@ -1,14 +1,17 @@
 import express from "express";
 import cors from "cors";
 import config from "./config";
-import db from "./db";
+import db from "./database";
 import routes from "./routes";
+
 const app = express();
+
 db.connect();
 
 app.use(cors());
 app.use(express.json());
 routes.use(app);
+
 app.get("/", (req, res) => {
   res.send("from wibusama without love 🖕");
 });
