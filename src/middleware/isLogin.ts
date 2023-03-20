@@ -11,11 +11,10 @@ const isLogin = async (req, res, next) => {
   }
 
   try {
+    
     const decode: any = jwt.verify(token as string, config.JWT_SECRET);
-
     if (decode) {
       const currentUser: any = await User.findOne({ _id: decode.id });
-
       if (currentUser) {
         req.userId = currentUser.id;
         next();

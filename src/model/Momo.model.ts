@@ -7,6 +7,7 @@ const Momoschema = new Schema(
     deviceId: { type: mongoose.Types.ObjectId, ref: "device" },
     phone: { type: Number, require: true, unique: true },
     password: { type: String, required: false },
+    name: { type: String, required: false },
     imei: { type: String, required: false },
     aaid: { type: String, required: false },
     token: { type: String, required: false },

@@ -1,12 +1,11 @@
 import jwt from "jsonwebtoken";
 import { showInternal, showMissing, showSuccess } from "../untils";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import config from "../config";
 import User from "../model/User.model";
 import momo from "../untils/momo";
 const saltRounds = 10;
 const UserController = {
-
   register: async (req, res) => {
     try {
       const { username, password, name } = req.body;
@@ -49,7 +48,7 @@ const UserController = {
       return showInternal(res, error);
     }
   },
-  
+
   login: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -86,14 +85,19 @@ const UserController = {
       return showInternal(res, error);
     }
   },
-  
-  addMomo: async (req, res) => {
-    const {phone, password} = req.body
-    const data = {
-      phone,
+
+  getInfor: async (req, res) => {
+    try {
+      const userId = req.userId;
+      
+      const user = await User.findOne({ _id: userId }).select("-password");
+      if (!user) return showMissing(res, "Không tìm thấy người dùng");
+      return showSuccess(res, user);
+    } catch (error) {
+      console.log(error);
+      
+      return showInternal(res, error);
     }
-    const value = await momo.getOTP(data)
-    return showSuccess(res, value);
   },
 };
 

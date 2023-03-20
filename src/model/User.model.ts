@@ -9,6 +9,7 @@ const Userschema = new Schema(
     role: { type: Number, default: 1 },
     money: { type: Number, default: 0 },
     status: { type: String, default: "Active" },
+    limit: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

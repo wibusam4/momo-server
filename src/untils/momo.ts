@@ -1,8 +1,13 @@
 import axios from "axios";
-import { appCode, appVer } from "./config";
+import { appCode, appVer, urlMomo } from "./config";
 import crypto from "crypto";
 const momo = {
-  generateRandom: (length = 20) => {
+
+  hashSHA256: (str) => {
+    return crypto.createHash("sha256").update(str).digest("hex");
+  },
+
+  generateString: (length) => {
     const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const size = characters.length;
     let randomString = "";
@@ -10,6 +15,10 @@ const momo = {
       randomString += characters[Math.floor(Math.random() * size)];
     }
     return randomString;
+  },
+
+  generateRandom: (length = 20) => {
+    return momo.generateString(length);
   },
 
   generateToken: () => {
@@ -51,22 +60,14 @@ const momo = {
   },
 
   generateSercureID: (length = 17) => {
-    const characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const charactersLength = characters.length;
-    let randomString = "";
-    for (let i = 0; i < length; i++) {
-      randomString += characters.charAt(
-        Math.floor(Math.random() * charactersLength)
-      );
-    }
-    return randomString;
+    return momo.generateString(length);
   },
 
   generateCheckSum: (type, microtime, phone, setupKeyDecrypt) => {
     if (setupKeyDecrypt.length < 32) {
       setupKeyDecrypt = setupKeyDecrypt.padEnd(32, "x");
     }
-    setupKeyDecrypt=setupKeyDecrypt.substr(0,32)
+    setupKeyDecrypt = setupKeyDecrypt.substr(0, 32);
     const Encrypt =
       phone + microtime + "000000" + type + microtime / 1000000000000.0 + "E12";
     const iv = Buffer.alloc(16, 0);
@@ -76,9 +77,7 @@ const momo = {
     return encrypted.toString("base64");
   },
 
-  hashSHA256: (str) => {
-    return crypto.createHash("sha256").update(str).digest("hex");
-  },
+  
 
   getSetupKey: (setupKey, ohash) => {
     if (ohash.length < 32) {
@@ -96,7 +95,7 @@ const momo = {
     if (setupKeyDecrypt.length < 32) {
       setupKeyDecrypt = setupKeyDecrypt.padEnd(32, "x");
     }
-    setupKeyDecrypt=setupKeyDecrypt.substr(0,32)
+    setupKeyDecrypt = setupKeyDecrypt.substr(0, 32);
     const data = `${imei}|${password}`;
     const iv = Buffer.alloc(16, 0); //
     const cipher = crypto.createCipheriv("aes-256-cbc", setupKeyDecrypt, iv);
@@ -117,7 +116,6 @@ const momo = {
         return result.data;
       })
       .catch((error) => {
-        console.log(error);
         return error;
       });
     return response;
@@ -185,7 +183,7 @@ const momo = {
       },
     };
     const respone = await momo.curl(
-      "https://api.momo.vn/backend/otp-app/public/",
+      urlMomo.SEND_OTP_MSG,
       header,
       Data
     );
@@ -242,7 +240,7 @@ const momo = {
       },
     };
     const respone = await momo.curl(
-      "https://api.momo.vn/backend/auth-app/public/CHECK_USER_BE_MSG",
+      urlMomo.CHECK_USER_BE_MSG,
       header,
       datas
     );
@@ -307,7 +305,7 @@ const momo = {
       },
     };
     const respone = await momo.curl(
-      "https://api.momo.vn/backend/otp-app/public/",
+      urlMomo.REG_DEVICE_MSG,
       header,
       Data
     );
@@ -315,8 +313,6 @@ const momo = {
   },
 
   loginUser: async (data) => {
-    console.log(data);
-    
     const header = {
       agent_id: "undefined",
       user_phone: data.phone,
@@ -371,7 +367,7 @@ const momo = {
       },
     };
     const respone = await momo.curl(
-      "https://owa.momo.vn/public/login",
+      urlMomo.USER_LOGIN_MSG,
       header,
       Data
     );
