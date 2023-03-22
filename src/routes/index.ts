@@ -3,8 +3,8 @@ import routerMomo from "./Momo.route"
 
 const routes = {
   use: (app) => {
-    app.use("/api/user",routerUser);
-    app.use("/api/momo", routerMomo)
+    app.use("/backend/user",routerUser);
+    app.use("/backend/momo", routerMomo)
   },
 };
 
