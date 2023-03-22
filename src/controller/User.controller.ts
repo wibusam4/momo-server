@@ -3,7 +3,6 @@ import { showInternal, showMissing, showSuccess } from "../untils";
 import bcrypt from "bcryptjs";
 import config from "../config";
 import User from "../model/User.model";
-import momo from "../untils/momo";
 const saltRounds = 10;
 const UserController = {
   register: async (req, res) => {
@@ -94,8 +93,6 @@ const UserController = {
       if (!user) return showMissing(res, "Không tìm thấy người dùng");
       return showSuccess(res, user);
     } catch (error) {
-      console.log(error);
-      
       return showInternal(res, error);
     }
   },
