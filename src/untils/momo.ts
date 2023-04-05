@@ -2,7 +2,6 @@ import axios from "axios";
 import { appCode, appVer, urlMomo } from "./config";
 import crypto from "crypto";
 const momo = {
-
   hashSHA256: (str) => {
     return crypto.createHash("sha256").update(str).digest("hex");
   },
@@ -77,8 +76,6 @@ const momo = {
     return encrypted.toString("base64");
   },
 
-  
-
   getSetupKey: (setupKey, ohash) => {
     if (ohash.length < 32) {
       ohash = ohash.padEnd(32, "x");
@@ -111,14 +108,15 @@ const momo = {
       headers: headers,
       data: data,
     };
-    const response = await axios(config)
-      .then((result) => {
-        return result.data;
-      })
-      .catch((error) => {
-        return error;
-      });
-    return response;
+    try {
+      const response = (await axios(config)).data;
+      console.log(response);
+      
+      return response;
+      
+    } catch (error) {
+      return error;
+    }
   },
 
   getOTP: async (data) => {
@@ -182,11 +180,7 @@ const momo = {
         checkSum: "",
       },
     };
-    const respone = await momo.curl(
-      urlMomo.SEND_OTP_MSG,
-      header,
-      Data
-    );
+    const respone = await momo.curl(urlMomo.SEND_OTP_MSG, header, Data);
     return respone;
   },
 
@@ -239,11 +233,8 @@ const momo = {
         checkSum: "",
       },
     };
-    const respone = await momo.curl(
-      urlMomo.CHECK_USER_BE_MSG,
-      header,
-      datas
-    );
+    const respone = await momo.curl(urlMomo.CHECK_USER_BE_MSG, header, datas);
+    
     return respone;
   },
 
@@ -304,11 +295,7 @@ const momo = {
         checkSum: "",
       },
     };
-    const respone = await momo.curl(
-      urlMomo.REG_DEVICE_MSG,
-      header,
-      Data
-    );
+    const respone = await momo.curl(urlMomo.REG_DEVICE_MSG, header, Data);
     return respone;
   },
 
@@ -366,11 +353,7 @@ const momo = {
         ),
       },
     };
-    const respone = await momo.curl(
-      urlMomo.USER_LOGIN_MSG,
-      header,
-      Data
-    );
+    const respone = await momo.curl(urlMomo.USER_LOGIN_MSG, header, Data);
     return respone;
   },
 };
