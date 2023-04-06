@@ -5,7 +5,8 @@ import { showInternal, showMissing, showSuccess } from "../untils";
 import momo from "../untils/momo";
 
 const MomoController = {
-  add: async (req, res) => {
+
+  addMomo: async (req, res) => {
     const { phone, otp, password, action } = req.body;
     const userId = req.userId;
     let findMomo = Momo;
@@ -129,7 +130,7 @@ const MomoController = {
     }
   },
 
-  get: async (req, res) => {
+  getMomoByUserId: async (req, res) => {
     try {
       const userId = req.userId;
       const momo = await Momo.find({
@@ -141,7 +142,7 @@ const MomoController = {
     }
   },
 
-  delete: async (req, res) => {
+  deleteMomoById: async (req, res) => {
     try {
       const { id } = req.body;
       const userId = req.userId;
@@ -153,6 +154,8 @@ const MomoController = {
       showInternal(res, error);
     }
   },
+
+
 };
 
 export default MomoController;

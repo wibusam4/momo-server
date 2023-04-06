@@ -1,0 +1,28 @@
+###Register
+POST http://localhost:5000/api/user/register
+Content-Type: application/json
+
+{
+    "name": "admin ne",
+    "username":"admin",
+    "password":"111qqqqq"
+}
+
+###Login
+POST http://localhost:5000/backend/user/login
+Content-Type: application/json
+
+{
+    "username":"admin",
+    "password":"111qqqqq"
+}
+
+###GetInfor
+POST http://localhost:5000/backend/user/momo
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0MGFkYjM0NjhlZjVmN2ZmYmVmMzAzNSIsInVzZXJuYW1lIjoiYWRtaW4iLCJyb2xlIjoxLCJpYXQiOjE2ODA2ODM4NjksImV4cCI6MTY4MDY5MTA2OX0.dY7xrz4tFYIyFotLAtFrt4Wr9BPSbO6dPMTiS-OdmJE
+Content-Type: application/json
+
+{
+    "action": "GET-OTP",
+    "phone" : "0367258861"
+}

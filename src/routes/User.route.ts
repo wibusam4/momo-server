@@ -6,9 +6,9 @@ const routerUser = express.Router();
 
 routerUser.post("/register", UserController.register);
 routerUser.post("/login", UserController.login);
-routerUser.post("/momo", isLogin, MomoController.add);
-routerUser.get("/momo", isLogin, MomoController.get);
-routerUser.put("/momo", isLogin, MomoController.delete);
-routerUser.get("/infor", isLogin, UserController.getInfor);
+routerUser.post("/momo", isLogin, MomoController.addMomo);
+routerUser.get("/momo", isLogin, MomoController.getMomoByUserId);
+routerUser.delete("/momo", isLogin, MomoController.deleteMomoById);
+routerUser.get("/infor", isLogin, UserController.getInforUser);
 
 export default routerUser;

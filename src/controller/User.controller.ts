@@ -85,7 +85,7 @@ const UserController = {
     }
   },
 
-  getInfor: async (req, res) => {
+  getInforUser: async (req, res) => {
     try {
       const userId = req.userId;
       

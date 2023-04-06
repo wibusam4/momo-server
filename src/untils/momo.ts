@@ -111,9 +111,8 @@ const momo = {
     try {
       const response = (await axios(config)).data;
       console.log(response);
-      
+
       return response;
-      
     } catch (error) {
       return error;
     }
@@ -234,7 +233,7 @@ const momo = {
       },
     };
     const respone = await momo.curl(urlMomo.CHECK_USER_BE_MSG, header, datas);
-    
+
     return respone;
   },
 
@@ -354,6 +353,64 @@ const momo = {
       },
     };
     const respone = await momo.curl(urlMomo.USER_LOGIN_MSG, header, Data);
+    return respone;
+  },
+
+  GENERATE_TOKEN_AUTH_MSG: async (data) => {
+    const header = {
+      agent_id: data.agentId,
+      user_phone: data.phone,
+      sessionkey: data.sessionKey ?? "",
+      authorization: `Bearer ${data.authorization}`,
+      msgtype: "GENERATE_TOKEN_AUTH_MSG",
+      Host: "api.momo.vn",
+      user_id: data.phone,
+      "User-Agent": "MoMoPlatform-Release/31062 CFNetwork/1325.0.1 Darwin/21.1.0",
+      app_version: appVer,
+      app_code: appCode,
+      device_os: "ANDROID",
+    };
+    const microtime = Date.now().toString();
+    const Data = {
+      user: data.phone,
+      msgType: "GENERATE_TOKEN_AUTH_MSG",
+      cmdId: microtime + "000000",
+      lang: "vi",
+      time: microtime,
+      channel: "APP",
+      appVer: appVer,
+      appCode: appCode,
+      deviceOS: "Android",
+      buildNumber: 0,
+      appId: "vn.momo.platform",
+      result: true,
+      errorCode: 0,
+      errorDesc: "",
+      momoMsg: {
+        _class: "mservice.backend.entity.msg.RefreshTokenMsg",
+        refreshToken: data.refreshToken,
+      },
+      extra: {
+        pHash: momo.getPasswordHash(
+          data.imei,
+          data.password,
+          data.setupKeyDecrypt
+        ),
+        AAID: data.aaid,
+        IDFA: "",
+        TOKEN: data.token,
+        SIMULATOR: "",
+        SECUREID: data.secureId,
+        MODELID: data.deviceId.modelId,
+        checkSum: momo.generateCheckSum(
+          "USER_LOGIN_MSG",
+          microtime,
+          data.phone,
+          data.setupKeyDecrypt
+        ),
+      },
+    };
+    const respone = await momo.curl(urlMomo.GENERATE_TOKEN_AUTH_MSG, header, Data);
     return respone;
   },
 };
